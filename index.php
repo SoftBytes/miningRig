@@ -66,13 +66,89 @@
       </div> <!-- end container -->
     </nav>
 
+
     <div class="jumbotron jumbotron-fluid text-center bg-success text-white">
       <h1>Cryptocurrency Mining Rig Settings</h1>
       <p>Configure your rig to maximise performace and mine more coins!</p>
+      
     </div>
+    
+    <!-- Modified by Alex to add dynimac data from CURL-->
+    <?php
+	//first fetch main miner address from GET parameter if present in URL and show config table with the rest of the page 
+	//otherwise - display message Cannot find specified ETHOS ID
+	
+	if(isset($_GET['id'])){
+		$ethos_id=$_GET['id'];
+		
+		//ok, so now lets make API call to fetch the data. 
+		
+		$curl = curl_init();
 
+		curl_setopt_array($curl, array(
+		  CURLOPT_URL => "http://".$ethos_id.".ethosdistro.com/?json=yes",
+		  CURLOPT_RETURNTRANSFER => true,
+		  CURLOPT_ENCODING => "",
+		  CURLOPT_MAXREDIRS => 10,
+		  CURLOPT_TIMEOUT => 30,
+		  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+		  CURLOPT_CUSTOMREQUEST => "GET"
+		));
+		
+		$response = curl_exec($curl);
+		$err = curl_error($curl);
+
+		curl_close($curl);
+		//ideally we need first make a call and see if ethosID is valid, and/or we're not getting errors, but for now I'll omit this part
+		if ($err) {
+		  echo "cURL Error #:" . $err;
+		} else {
+			
+			//add square brackets to response so that silly PHP can expplode jason data into array
+  			$alldata = json_decode('['.$response.']', true);
+				
+				//jason data translates into following data/arrays
+				//alldata[0] - array containg entire response
+				//alldata[0][rigs] - 2 dimensional array [rig name][rig statistics]
+				//alldata[0][total_hash] - value
+				//alldata[0][alive_gpus]  - value
+				//alldata[0][total_gpus] - value
+				//alldata[0][alive_rigs] - value
+				//alldata[0][total_rigs] - value
+				//alldata[0][current_version] - value
+				//alldata[0][avg_temp] - value
+				//alldata[0][capacity] - value
+				//alldata[0][per_info] - 2 dimensional array [miner name][miner statistics]
+			
+			//echo raw jason
+			//echo $response;
+			
+		}
+	}
+	//for now I'm just spitting raw HTML inside php, but we should rather have proper HTML wraping
+	else{
+		echo "Cannot find your ethOS ID! Please make sure you have added it to URL.";
+	}
+	?>
+	<div class="summary_wrapper">
     <!-- start bootstrap container // insert all content within here -->
-
+     <?php
+    	//summary - per_info
+		$summary = $alldata[0]["per_info"];
+		foreach($summary as $algo_miner=>$sum_info){
+		?>
+		<div class="summary_block_<?php echo ($algo_miner) ?>">
+		<h3 class="miner_summary_head_<?php echo $algo_miner; ?>"><?php echo ($algo_miner=='claymore'||$algo_miner=='ethermine'?'Ethereum':'ZCash'); ?> </h3>
+			<h5>Total Hash: <?php echo $sum_info["hash"]." ".($algo_miner=='claymore'?'MH/s':'Sol/s'); ?></h5>
+			<h5>Total Rigs: <?php echo $sum_info["per_total_rigs"]; ?></h5>
+			<h5>Offline: <?php echo $sum_info["per_total_rigs"]-$sum_info["per_alive_rigs"]; ?></h5>
+			<span>Checked at: <?php echo date('H:i d/m', $sum_info["current_time"]); ?></span>
+	    </div>
+	    
+		<?php 
+		}
+	?>
+	</div>
   <div class="container-fluid mb-5">
 
      <div class="table-responsive">
@@ -90,23 +166,25 @@
            </tr>
          </thead>
          <tbody>
-          <tr>
-            <td><input class="form-control  font-weight-bold" id="miner1_MinerID" type="text" value="f1810f" disabled></td>
-            <td>
-              <div class="form-group">
-                <select class="form-control" style="min-width: 100px;" id="miner1_Driver">
-                  <option>Nvidia</option>
-                  <option>Radeon</option>
-                </select>
-              </div>
-            </td>
-            <td><input class="form-control" id="miner1_vlt" type="text" value="1000 1000 1000 1000 1000"></td>
-            <td><input class="form-control" id="miner1_pwr" type="text" value="9 9 9 9 9">
-            <td><input class="form-control" id="miner1_mem" type="text" value="5000 5000 5000 5000 5000"></td>
-            <td><input class="form-control" id="miner1_miner" type="text" value="ewbf-zcash"></td>
-            <td><input class="form-control" id="miner1_flg" type="text" value="--cl-local-work 256 --cl-global-work 8192 --farm-recheck 200"></td>
-            <td><input class="form-control" id="miner1_fan" type="text" value="90 90 90 90 90"></td>
-          </tr>
+                   <!-- Display Rigs Info insid e table -->
+          	<?php	
+			$allrigs = $alldata[0]["rigs"];
+			// display all rig stats in the long list
+			foreach($allrigs as $rigname=>$rigstats){ ?>
+				<tr>
+            	<td><input class="form-control font-weight-bold" id="<?php echo $rigname ?>_MinerID" type="text" value="<?php echo $rigname ?>" disabled></td>
+				<td><input class="form-control" id="<?php echo $rigname ?>_driver" type="text" value="<?php echo $rigstats["driver"] ?>"> </td>
+				<td><input class="form-control" id="<?php echo $rigname ?>_vlt" type="text" value="<?php echo $rigstats["voltage"] ?>"></td>
+				<td><input class="form-control" id="<?php echo $rigname ?>_pwr" type="text" value="<?php echo $rigstats["powertune"] ?>">
+				<td><input class="form-control" id="<?php echo $rigname ?>_mem" type="text" value="<?php echo $rigstats["mem"] ?>"></td>
+				<td><input class="form-control" id="<?php echo $rigname ?>_miner" type="text" value="<?php echo $rigstats["miner"] ?>"></td>
+				<td><input class="form-control" id="<?php echo $rigname ?>_flg" type="text" value="<?php echo $rigstats["core"] ?>"></td>
+				<td><input class="form-control" id="<?php echo $rigname ?>_fan" type="text" value="<?php echo $rigstats["fanrpm"] ?>"></td>
+			  </tr>
+				
+			<?php }?>
+<!--
+
           <tr>
             <td><input class="form-control font-weight-bold" id="miner2_MinerID" type="text" value="0004f6" disabled></td>
             <td>
@@ -141,6 +219,7 @@
              <td><input class="form-control" id="miner3_flg" type="text" value="--cl-local-work 256 --cl-global-work 8192 --farm-recheck 200"></td>
              <td><input class="form-control" id="miner3_fan" type="text" value="100 100 100 100 100"></td>
            </tr>
+-->
          </tbody>
        </table>
        </div>

@@ -31,3 +31,39 @@ th {
 #search {
 	border: 1px solid #5cb85c;
 }
+
+.summary_wrapper{
+	text-align: center;
+	margin-bottom: 25px;
+}
+.summary_block_ewbf-zcash, 
+.summary_block_claymore-zcash{
+	background-color: #DCDCDC;
+	height: auto;
+	width: 200px;
+	padding: 5px;
+	margin: 5px;
+	border: 0px solid;
+	border-radius: 6px;
+	/*float: left;*/
+	display: inline-block;
+	position:relative;
+	text-align: center;
+	color: #2F2F2F
+
+}
+.summary_block_claymore{
+	background-color: #DCDCDC;
+	height: auto;
+	width: 200px;
+	padding: 5px;
+	margin: 5px;
+	border: 0px solid;
+	border-radius: 6px;
+	/*float: left;*/
+	display: inline-block;
+	position:relative;
+	text-align: center;
+	color: #2F2F2F;
+
+}
